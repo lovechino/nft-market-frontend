@@ -41,7 +41,7 @@ export default function MarketplacePage() {
         // Thử gọi một method view đơn giản trước
         const nftAddress = "0x22FB726b8f1C1Eef3644B2ee73aA943AF98d2414";
         const tokenIds = Array.from({ length: 10 }, (_, i) => i + 1);
-        const data = await market.getAllListings(nftAddress, [1]);
+        const data = await market.getAllListings(nftAddress, tokenIds );
         console.log("📦 Listings data:", data);
         
         if (!data || data.length === 0) {

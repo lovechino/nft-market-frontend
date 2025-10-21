@@ -10,13 +10,15 @@ export const useWallet = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window.ethereum !== 'undefined') {
-      const newProvider = new ethers.BrowserProvider(window.ethereum);
-      setProvider(newProvider);
-      
-      // Kiểm tra xem đã kết nối chưa
-      checkConnection(newProvider);
-    }
+    const init = async () => {
+      if (typeof window !== 'undefined' && (window as any).ethereum) {
+        const ethereum = (window as any).ethereum;
+        const newProvider = new ethers.BrowserProvider(ethereum);
+        setProvider(newProvider);
+        await checkConnection(newProvider);
+      }
+    };
+    init();
   }, []);
 
   const checkConnection = async (provider: ethers.BrowserProvider) => {
@@ -26,8 +28,8 @@ export const useWallet = () => {
         setAddress(accounts[0].address);
         setIsConnected(true);
       }
-    } catch (error) {
-      console.error('Error checking connection:', error);
+    } catch (err) {
+      console.error('Error checking connection:', err);
     }
   };
 
@@ -36,16 +38,16 @@ export const useWallet = () => {
       setError('MetaMask chưa được cài đặt!');
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const accounts = await provider.send('eth_requestAccounts', []);
       setAddress(accounts[0]);
       setIsConnected(true);
-    } catch (error: any) {
-      setError(error.message || 'Lỗi khi kết nối ví');
+    } catch (err: any) {
+      setError(err.message || 'Lỗi khi kết nối ví');
       setIsConnected(false);
     } finally {
       setIsLoading(false);
@@ -58,13 +60,13 @@ export const useWallet = () => {
     setError(null);
   };
 
-  return { 
-    address, 
-    provider, 
+  return {
+    address,
+    provider,
     isConnected,
     isLoading,
     error,
-    connect, 
-    disconnect
+    connect,
+    disconnect,
   };
 };

@@ -110,7 +110,7 @@ export default function Home() {
             >
               🖼 Bộ sưu tập
             </button>
-            <button
+            {/* <button
               onClick={() => setActiveTab('mint')}
               className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors duration-200 ${
                 activeTab === 'mint'
@@ -119,7 +119,7 @@ export default function Home() {
               }`}
             >
               🎨 Tạo NFT
-            </button>
+            </button> */}
           </nav>
         </div>
       </header>

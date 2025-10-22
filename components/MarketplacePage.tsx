@@ -6,26 +6,21 @@ import { getMarketplaceContract } from "@/hooks/marketplace";
 const MarketplacePage = () => {
   const [nfts, setNfts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [buying, setBuying] = useState<number | null>(null);
+
+  const nftAddress = "0x22FB726b8f1C1Eef3644B2ee73aA943AF98d2414";
 
   const loadMarketNFTs = async () => {
     try {
       setLoading(true);
-
-      // ✅ Provider từ MetaMask
       const provider = new ethers.BrowserProvider((window as any).ethereum);
       const market = getMarketplaceContract(provider);
 
-      // ✅ Địa chỉ NFT contract
-      const nftAddress = "0x22FB726b8f1C1Eef3644B2ee73aA943AF98d2414";
-
-      // ✅ Danh sách tokenId để quét
       const tokenIds = Array.from({ length: 10 }, (_, i) => i + 1);
-
-      // ✅ Lấy dữ liệu listing từ marketplace
       const data = await market.getAllListings(nftAddress, tokenIds);
+
       console.log("📦 Listings data:", data);
 
-      // ✅ Chuyển đổi dữ liệu trả về
       const listings = data
         .map((l: any, index: number) => ({
           tokenId: tokenIds[index],
@@ -37,7 +32,6 @@ const MarketplacePage = () => {
             item.seller !== "0x0000000000000000000000000000000000000000"
         );
 
-      // ✅ Lấy metadata cho từng NFT
       const nftContract = getNFTContract(provider);
       const nftDetails = await Promise.all(
         listings.map(async (l: any) => {
@@ -57,7 +51,6 @@ const MarketplacePage = () => {
               image: url,
             };
 
-            // 🧠 Thử fetch xem tokenURI là JSON hay ảnh
             try {
               const res = await fetch(url);
               const text = await res.text();
@@ -66,8 +59,11 @@ const MarketplacePage = () => {
                 const parsed = JSON.parse(text);
                 metadata = {
                   name: parsed.name || metadata.name,
-                  description: parsed.description || metadata.description,
-                  image: parsed.image?.replace("ipfs://", "https://ipfs.io/ipfs/") || metadata.image,
+                  description:
+                    parsed.description || metadata.description,
+                  image:
+                    parsed.image?.replace("ipfs://", "https://ipfs.io/ipfs/") ||
+                    metadata.image,
                 };
               } else {
                 console.warn("⚠️ TokenURI là ảnh, không phải JSON:", url);
@@ -100,6 +96,31 @@ const MarketplacePage = () => {
     }
   };
 
+  // ⚡ Hàm mua NFT
+  const handleBuyNFT = async (tokenId: number, price: number) => {
+    try {
+      setBuying(tokenId);
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      const signer = await provider.getSigner();
+      const market = getMarketplaceContract(signer);
+
+      const tx = await market.buyNFT(nftAddress, tokenId, {
+        value: ethers.parseEther(price.toString()),
+      });
+
+      console.log("🛍️ Giao dịch đang gửi:", tx.hash);
+      await tx.wait();
+      alert(`✅ Mua thành công NFT #${tokenId}!`);
+
+      loadMarketNFTs();
+    } catch (error: any) {
+      console.error("❌ Lỗi khi mua NFT:", error);
+      alert("Vui lòng kiểm tra lại số dư");
+    } finally {
+      setBuying(null);
+    }
+  };
+
   useEffect(() => {
     loadMarketNFTs();
   }, []);
@@ -125,6 +146,18 @@ const MarketplacePage = () => {
           <p className="text-xs text-gray-400">
             Người bán: {nft.seller.slice(0, 6)}...{nft.seller.slice(-4)}
           </p>
+
+          <button
+            onClick={() => handleBuyNFT(nft.tokenId, nft.price)}
+            disabled={buying === nft.tokenId}
+            className={`mt-3 w-full py-2 rounded-xl text-white font-semibold transition ${
+              buying === nft.tokenId
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
+          >
+            {buying === nft.tokenId ? "⏳ Đang mua..." : "🛒 Mua ngay"}
+          </button>
         </div>
       ))}
     </div>
